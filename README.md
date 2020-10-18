@@ -41,5 +41,7 @@ After that, just run
 
 ```bash
 git clone https://github.com/grajat90/ResampleGAN
-cd ResampleGAN && git init && git pull
+cd ResampleGAN && git init
+git remote add origin git@github.com:grajat90/ResampleGAN.git
+git pull origin
 ```
