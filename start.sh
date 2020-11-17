@@ -6,11 +6,10 @@ sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/r
 sudo apt update
 sudo apt install cuda
 pip list -o --format columns|  cut -d' ' -f1|xargs -n1 pip install -U
-pip install matplotlib
-pip install tqdm
-export model=dense
-export iters=1000
 nvidia-smi > nvidia_output.txt
 git clone https://github.com/grajat90/ResampleGAN
 cd ResampleGAN
-python ResampleGAN.py
+export model=dense
+export iters=1000
+pip install -r ./requirements.txt
+python resampleGAN.py
