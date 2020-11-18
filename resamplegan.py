@@ -51,7 +51,7 @@ logging.basicConfig(filename='./logs.log',
 
 
 import os
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
