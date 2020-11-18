@@ -281,7 +281,8 @@ def train(epochs):
   g_loss = None
   d_loss = None
   for epoch in tqdm(range(epochs)):
-    log = str(f"========================================\nEpoch - {epoch+1}")
+    epch = epoch + 1
+    log = str(f"========================================\nEpoch - {epch}")
     logging.info(log)
     gLoss = 0
     dLoss = 0
