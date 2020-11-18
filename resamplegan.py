@@ -281,7 +281,8 @@ def train(epochs):
   g_loss = None
   d_loss = None
   for epoch in tqdm(range(epochs)):
-    logging.info(f"========================================\nEpoch - {epoch+1}")
+    log = f"========================================\nEpoch - {epoch+1}"
+    logging.info(log)
     gLoss = 0
     dLoss = 0
     for idx, elem in enumerate(tqdm(ds_train)):
@@ -295,7 +296,8 @@ def train(epochs):
       gLoss += g_loss
       dLoss += d_loss
       # d_loss, g_loss = strategy.run(train_step, args=(lr, hr))
-    logging.info(f"{dLoss/800} - Discriminator Loss \n {gLoss/800} - Generator loss\n========================================\n")
+    log = f"{dLoss/800} - Discriminator Loss \n {gLoss/800} - Generator loss\n========================================\n"
+    logging.info(log)
     gen_model.save_weights(chkpt_path)
     disc_model.save_weights(chkpt_path)
   # for epoch in range(epochs):
