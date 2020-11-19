@@ -249,11 +249,13 @@ def train_step(lr, hr):
 
 
 # In[13]:
-
+mod = os.getenv("model")
+chkpt_path = "gs://main-gan-data/chkpt-"+mod
+os.mkdir(chkpt_path)
 
 try:
-  load_gen = gen_model.load_weights("./chkpt/GEN")
-  load_disc = disc_model.load_weights("./chkpt/DISC")
+  load_gen = gen_model.load_weights(chkpt_path+"/GEN")
+  load_disc = disc_model.load_weights(chkpt_path+"/DISC")
   load_gen.assert_consumed()
   load_gen.assert_consumed()
 except:
@@ -273,9 +275,7 @@ def rcrop(img):
   ystart = midy - (sizey//2) - 1
   return img[xstart:xstart+sizex, ystart:ystart+sizey, :]
 
-mod = os.getenv("model")
-chkpt_path = "./chkpt-"+mod
-os.mkdir(chkpt_path)
+
 
 def train(epochs):
   g_loss = None
@@ -299,8 +299,8 @@ def train(epochs):
       # d_loss, g_loss = strategy.run(train_step, args=(lr, hr))
     log = str("{} - Discriminator Loss \n {} - Generator loss\n========================================\n".format((dLoss/800), (gLoss/800)))
     logging.info(log)
-    gen_model.save_weights(chkpt_path)
-    disc_model.save_weights(chkpt_path)
+    gen_model.save_weights(chkpt_path+"/GEN")
+    disc_model.save_weights(chkpt_path+"/DISC")
   # for epoch in range(epochs):
   #   print("Iter {}/{}, DIV2K BICUBIC 4X".format(epoch, epochs))
   #   for data_next in tqdm(ds_train):
