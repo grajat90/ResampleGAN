@@ -22,16 +22,6 @@ Original file is located at
 
 </center>
 
-### Our network (change as needed):
-
-<center>
-
-<img src="https://camo.githubusercontent.com/ebd11f6dea8996adcb01132ccd0526e971f4b12b/68747470733a2f2f696d6775722e636f6d2f4a6a7a555958732e6a7067" width = '60%'/>
-
-<img src="https://camo.githubusercontent.com/07e22e49a908fe6e243468d335a702854260db56/68747470733a2f2f696d6775722e636f6d2f316973696737432e6a7067" width = '60%' />
-
-</center>
-
 ---
 """
 
@@ -53,13 +43,6 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.optimizers.schedules import PiecewiseConstantDecay
 from tensorflow.python.keras.applications.vgg19 import VGG19, preprocess_input as vgg19_preprocess
-
-from google.colab import auth
-auth.authenticate_user()
-
-!gsutil -m cp -r gs://main-gan-data/dataset ./
-# !mv ./main-gan-data/* ./
-# !rm -r -rf main-gan-data
 
 (ds_train, ds_validation), info = tfds.load(
     'div2k/bicubic_x4',
@@ -102,9 +85,6 @@ def generator(momentum=0.8):
   hr_out = Conv2DTranspose(filters = 3, kernel_size = (9,9), padding = "SAME")(hr_out) #k9n3s1
   # hr_out = tanh(hr_out)
   return Model(lr_in, hr_out, name="GAN_GEN")
-
-import cpuinfo
-cpuinfo.get_cpu_info()
 
 def discriminator(momentum=0.8):
   img_in = tf.keras.Input(shape = (None,None,3))
@@ -214,18 +194,16 @@ def train_step(lr, hr):
 
   return disc_loss, gen_loss
 
-model_name = "chkpt-cnn-gap-dense-color-rec-2-1076-fresh"
-
 try:
-    load_gen = gen_model.load_weights("gs://main-gan-data/"+model_name+"/GEN")
-    load_disc = disc_model.load_weights("gs://main-gan-data/"+model_name+"/DISC")
+    load_gen = gen_model.load_weights("./checkpoint/GEN")
+    load_disc = disc_model.load_weights("./checkpoint/DISC")
     load_gen.assert_consumed()
     load_gen.assert_consumed()
 except:
   print("Cannot Load model weight - either running for first time or data/path in not proper format")
 
 def saveimg(epoch):
-  kid_hr = img.imread("./kid.jpg")
+  kid_hr = img.imread("./img.jpg")
   shp = [kid_hr.shape[0]//4,kid_hr.shape[1]//4]
   kid_lr = tf.image.resize(kid_hr, shp, method="bicubic")
   kid_lr = tf.dtypes.saturate_cast([kid_lr], tf.float32)
@@ -237,22 +215,19 @@ def saveimg(epoch):
   hr_gen = Image.fromarray(hr_gen)
   imgfile = "./it-{}.jpg".format(epoch)
   hr_gen.save(imgfile)
-  os.system("gsutil cp {} gs://main-gan-data/chkpt-cnn-gap-dense-color-rec-2-invar/".format(imgfile))
 
 data = {}
-!gsutil cp gs://main-gan-data/chkpt-cnn-gap-dense-color-rec-2-1076/epoch-data-tpu.json ./
 try:
-  with open('./epoch-data-tpu.json', 'r') as fp:
+  with open('./epoch-data.json', 'r') as fp:
     data = json.load(fp)
     data = dict([int(key), value] for key, value in data.items())  
 except:
   pass
 def epochsave(epoch, g_err, d_err):
   data[int(epoch)] = {'g_err': str(g_err), 'd_err': str(d_err)}
-  with open('./epoch-data-tpu.json', 'w') as fp:
+  with open('./epoch-data.json', 'w') as fp:
     json.dump(data, fp, sort_keys=True, indent="")
     fp.close()
-  os.system("gsutil cp ./epoch-data-tpu.json gs://main-gan-data/chkpt-cnn-gap-dense-color-rec-2-invar/")
   return
 
 def rcrop(img, rxseed, ryseed):
@@ -273,8 +248,8 @@ def train(epochs, batch_size, skip_epochs):
   g_loss = None
   d_loss = None
   try:
-    load_gen = gen_model.load_weights("gs://main-gan-data/chkpt-cnn-gap-dense-color-rec-2-invar/GEN")
-    load_disc = disc_model.load_weights("gs://main-gan-data/chkpt-cnn-gap-dense-color-rec-2-invar/DISC")
+    load_gen = gen_model.load_weights("./checkpoint/GEN")
+    load_disc = disc_model.load_weights("./checkpoint/DISC")
     load_gen.assert_consumed()
     load_gen.assert_consumed()
   except:
@@ -316,8 +291,8 @@ def train(epochs, batch_size, skip_epochs):
         lr_batch = []
         hr_batch = []
     print(f"{dLoss/800} - Discriminator Loss \n {gLoss/800} - Generator loss\n========================================\n")
-    gen_model.save_weights("gs://main-gan-data/chkpt-cnn-gap-dense-color-rec-2-invar/GEN")
-    disc_model.save_weights("gs://main-gan-data/chkpt-cnn-gap-dense-color-rec-2-invar/DISC")
+    gen_model.save_weights("./checkoint/GEN")
+    disc_model.save_weights("./checkpoint/DISC")
     epochsave(epoch, (gLoss/800).numpy(), (dLoss/800).numpy())
     if((epoch)%50==0):
       saveimg(epoch)
@@ -334,96 +309,4 @@ try:
 except:
   skip_epochs = 0
 train(epochs=2500, batch_size=5, skip_epochs=skip_epochs) #593
-
-scores = {"nearest":{"psnr":0.0,"ssim":0.0},
-          "proposed":{"psnr":0.0,"ssim":0.0}}
-bias = [x for x in range(-100,100) if x%4==0]
-for elem in tqdm(ds_validation):
-  hr = tf.dtypes.saturate_cast(elem['hr'], tf.float32)
-  rxseed = random.choice(bias)
-  ryseed = random.choice(bias)
-  (hr, hr_shape) = rcrop(hr, rxseed, ryseed)
-  # hr_shape = list(hr.shape)[:2]
-  lr_shape = [x//4 for x in hr_shape if x%4 == 0]
-  lr = tf.image.resize(hr, lr_shape, method="bicubic")
-  hr = hr/255.0
-  lr = lr/255.0
-  nearest = tf.image.resize(lr,hr_shape,method="nearest")
-  lr = tf.dtypes.saturate_cast([lr], tf.float32)
-  proposed = gen_model(lr,training = False)[0]
-  scores["nearest"]["psnr"] += tf.image.psnr(hr,nearest,1.0).numpy()/100.0
-  scores["nearest"]["ssim"] += tf.image.ssim(hr,nearest,1.0).numpy()/100.0
-  scores["proposed"]["psnr"] += tf.image.psnr(hr,proposed,1.0).numpy()/100.0
-  scores["proposed"]["ssim"] += tf.image.ssim(hr,proposed,1.0).numpy()/100.0
-
-print(json.dumps(scores, indent=3))
-
-import matplotlib.image as img
-kid_hr = img.imread("./try-2.jpg")
-shp = [kid_hr.shape[0]//4,kid_hr.shape[1]//4]
-kid_lr = tf.image.resize(kid_hr, shp, method="bicubic")
-kid_hr = tf.dtypes.saturate_cast(kid_hr, tf.uint8)
-kid_lr = tf.dtypes.saturate_cast(kid_lr, tf.uint8)
-plt_hr = plt.figure(1)
-plt.imshow(kid_hr)
-plt_lr = plt.figure(2)
-plt.imshow(kid_lr)
-kid_lr = tf.dtypes.saturate_cast([kid_lr], tf.float32)
-kid_lr = kid_lr/255.0
-hr_gen = gen_model(kid_lr, training=False)[0]
-# hr_gen = hr_gen*255.0
-# hr_gen = tf.cast(hr_gen, tf.uint8)
-plt_fake = plt.figure(3)
-plt.imshow(hr_gen)
-shp = [shp[0]*2, shp[1]*2]
-hr_gen_2 = tf.image.resize(hr_gen, shp, method="bicubic")
-plt_fake_2 = plt.figure(4)
-plt.imshow(hr_gen_2)
-plt.show()
-
-hr_test = img.imread("./fruits-hr.jpg")
-lr_test = img.imread("./fruits-lr.jpg")
-hr_test = tf.dtypes.saturate_cast(hr_test, tf.uint8)
-lr_test = tf.dtypes.saturate_cast(lr_test, tf.uint8)
-plt.figure(1)
-plt.imshow(hr_test)
-plt.figure(2)
-plt.imshow(lr_test)
-lr_test = tf.dtypes.saturate_cast([lr_test], tf.float32)
-lr_test = lr_test/255.0
-gen_test = gen_model(lr_test, training=False)[0]
-gen_test = gen_test*255.0
-gen_test = tf.dtypes.saturate_cast(gen_test, tf.uint8)
-plt.figure(3)
-plt.imshow(gen_test)
-plt.show()
-gen_test = gen_test.numpy()
-gen_test = Image.fromarray(gen_test)
-imgpath = "./it"+model_name+".jpg"
-gen_test.save(imgpath)
-
-X = []
-Y1 = []
-Y2 = []
-for key, val in data.items():
-  X.append(int(key))
-  Y1.append(tf.strings.to_number(val["g_err"], tf.float32))
-  Y2.append(tf.strings.to_number(val["d_err"], tf.float32))
-X = X[1000:]
-Y1 = Y1[1000:]
-Y2 = Y2[1000:]
-plt.figure(1)
-plt.plot(X,Y1,'r', label="Generator")
-plt.legend()
-plt.savefig("GEN-1000.jpg")
-plt.figure(2)
-plt.plot(X,Y2,'b', label="Discriminator")
-plt.legend()
-plt.savefig("DISC-1000.jpg")
-plt.figure(3)
-plt.plot(X,Y1,'r', label="Generator")
-plt.plot(X,Y2,'b', label="Discriminator")
-plt.legend()
-plt.savefig("COMB-1000.jpg")
-plt.show()
 
