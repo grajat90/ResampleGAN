@@ -4,12 +4,13 @@
 
 ---
 
-## Work to be done
+## Results
 
 The following models have been created for rough reference:
 ![GEN](https://imgur.com/JjzUYXs.jpg)
 ![DIS](https://imgur.com/1isig7C.jpg)
-They have to be implemented, and played with in terms of various parameters.
+
+![COMPARISON](Examples/comparison.png "Result obtained")
 
 ---
 
