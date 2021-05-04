@@ -4,11 +4,13 @@
 
 ---
 
-## Results
+## Implementations
 
 The following models have been created for rough reference:
 ![GEN](https://imgur.com/JjzUYXs.jpg)
 ![DIS](https://imgur.com/1isig7C.jpg)
+
+#### Our results
 
 ![COMPARISON](Examples/comparison.png "Result obtained")
 
