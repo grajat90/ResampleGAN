@@ -18,13 +18,12 @@ The following models have been created for rough reference:
 
 We'll be working with these currently for rapid prototyping and realising the models:
 
-- [ ] Tensorflow
-- [ ] Keras
-- [ ] Pandas
-- [ ] Numpy
-- [ ] Scikit Learn
-- [ ] Anything else as seen fit
-      In fututre, the best approach will be hardcoded without using keras or tensorflow
+- [x] Tensorflow
+- [x] Keras
+- [x] Pandas
+- [x] Numpy
+- [x] Matplolib
+- [x] PILlow
 
 ---
 
